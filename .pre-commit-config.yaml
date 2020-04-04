@@ -19,13 +19,13 @@ repos:
     hooks:
     - id: flake8
       name: flake8
-      entry: pipenv run pytest tests/test_linters.py::test_flake8
+      entry: pipenv run flake8
       language: system
       pass_filenames: false
       stages: [commit]
     - id: pylint
       name: pylint
-      entry: pipenv run pytest tests/test_linters.py::test_pylint
+      entry: pipenv run pylint typer
       pass_filenames: false
       language: system
       stages: [commit]
