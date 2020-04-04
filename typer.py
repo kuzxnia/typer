@@ -2,7 +2,7 @@ import sys
 import time
 import line
 from itertools import zip_longest
-from event import read_single_keypress
+import curses
 
 
 def save_1000_most_common_en_words_to_file():
@@ -42,73 +42,84 @@ def drow_words():
     return res
 
 
-class Board:
-    def __init__(self):
-        self.current_line = 0
-        self.rows_amount = 2
-        self.current_word_index = 0
-        self.rows = [' '.join(drow_words()) for _ in range(self.rows_amount)]
-        self.answers = ['' for _ in range(self.rows_amount)]
+rows_amount = 2
+words_row = [drow_words() for _ in range(rows_amount)]
+rows = [' '.join(r) for r in words_row]
+answers = [[] for _ in range(rows_amount)]
+len_of_longest = len(max(rows, key=len))
 
-    def move_line_down(self, val=1):
-        for _ in range(val):
-            line.down()
-            self.current_line += 1
 
-    def move_line_up(self, val=1):
-        for _ in range(val):
-            line.up()
-            self.current_line -= 1
+# zmiana koloru słow podczas pisania, po zaakceptowaniu albo całe zielone albo całe czerwone
+def run(stdscr):
+    key = 0
+    change = 0
+    current_word = 0
+    current_line = 0
+    # Clear and refresh the screen for a blank canvas
+    stdscr.clear()
+    stdscr.refresh()
 
-    def clear(self):
-        i = 0
-        while i != self.current_line:
-            line.up()
-            self.current_line -= 1
+    # Start colors in curses
+    curses.start_color()
+    curses.use_default_colors()
+    curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
+    curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
+    curses.init_pair(3, curses.COLOR_WHITE, 238)  # white on dark gray
+    curses.init_pair(3, 48, curses.COLOR_BLACK)  # green on default
+    writen_text = ''
 
-    def check_current_word_and_line(self):
-        for row_num, (r, a) in enumerate(zip(self.rows, self.answers)):
-            for word_num, (w, we) in enumerate(zip_longest(r, a)):
-                if w != we:
-                    return row_num, word_num
+    while (key != ord('q')):
+        stdscr.clear()
+        height, width = stdscr.getmaxyx()
+        start_x_title = int((width // 2) - (len_of_longest // 2) - len_of_longest % 2)
+        start_y = int((height // 2) - len(rows))
 
-    def set_curr_line_to_curr_answer_line(self):
-        row_num, word_num = self.check_current_word_and_line()
+        # Initialization
+        with open('logs.txt', 'a') as f:
+            f.write(str(key) + '\n')
 
-        self.clear()
-        # self.move_line_down(((row_num + 1) * 2) - 1)
-        sys.stdout.write("\033[%d;%dH" % (((row_num + 1) * 2) - 1, word_num))
-        self.current_word_index = word_num
+        if key == 263:  # backspace
+            if change != 0:
+                change += -1
+                writen_text = writen_text[:-1]
+        elif key == ord(' ') or key == 10:
 
-    def run(self):
-        while 1:
-            for c_row in range(self.rows_amount):
-                sys.stdout.write('\r' + self.rows[c_row])
-                sys.stdout.flush()
-                self.move_line_down()
-                sys.stdout.write('\r' + ' ' * len(self.rows[c_row]))
-                sys.stdout.write('\r' + self.answers[c_row])
-                sys.stdout.flush()
-                self.move_line_down()
-
-            self.set_curr_line_to_curr_answer_line()
-
-            char = read_single_keypress()[0]
-
-            if char != '\x7f':  # backspace
-                self.answers[self.current_line - 1] += char
+            writen_text = ''
+            if len(words_row[current_line]) - 1 == current_word:
+                current_word = 0
+                current_line += 1
             else:
-                self.answers[self.current_line - 1] = self.answers[self.current_line - 1][:-1]
+                current_word += 1
+            change = 0
+            # accepting word
 
-            self.clear()
+        elif key != 0:
+            writen_text += chr(key)
+            change += 1
+
+        # Turning on attributes for title
+        stdscr.attron(curses.A_BOLD)
+        # Rendering title
+        for i, row in enumerate(rows):
+            stdscr.addstr(start_y + i, start_x_title, row)
+        # Turning off attributes for title
+        stdscr.attroff(curses.A_BOLD)
+
+        stdscr.attron(curses.color_pair(3))
+        stdscr.addstr(start_y + 6, start_x_title, writen_text + " " * (len_of_longest - len(writen_text)))
+        stdscr.attroff(curses.color_pair(3))
+
+        stdscr.move(start_y + 6, start_x_title + change)
+
+        # Refresh the screen
+        stdscr.refresh()
+
+        # Wait for next input
+        key = stdscr.getch()
 
 
 if __name__ == '__main__':
     # print text
     # line under empty
     # contunuisly upgrading
-    b = Board()
-    b.run()
-
-    # a = read_single_keypress()
-    # print('-> %s %s' % (repr(a), a))
+    curses.wrapper(run)
