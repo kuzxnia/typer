@@ -42,7 +42,8 @@ len_of_longest = max(map(lambda row: sum(len(word + " ") for word in row), rows)
 
 # zmiana koloru słow podczas pisania, po zaakceptowaniu albo całe zielone albo całe czerwone
 # noqa - function too complex,
-def run(stdscr):  # noqa
+@curses.wrapper  # noqa
+def run(stdscr=None):
     key = 0
     change = 0
     current_word = 0
@@ -80,7 +81,7 @@ def run(stdscr):  # noqa
             if len(rows[current_row]) == current_word - 1:
                 current_word = 1
                 current_row += 1
-                log.info(f"next row {current_row}")
+                log.info("next row %s", current_row)
 
             answers[current_row].append(writen_text)
             writen_text = ""
@@ -94,7 +95,10 @@ def run(stdscr):  # noqa
         ):
             execution_time = time() - start_time
             log.info(
-                f"cpm = {correct_words_len} time = {execution_time} {execution_time / 60.0}"
+                "cpm = %s time = %s %s",
+                correct_words_len,
+                execution_time,
+                (execution_time / 60.0),
             )
             cpm = correct_words_len // (execution_time / 60.0)
             statusbarstr = f"Press 'q' to exit | CPM = {cpm} WPM = {cpm/5}"
@@ -160,10 +164,3 @@ def run(stdscr):  # noqa
 
         if not start_time:
             start_time = time()
-
-
-if __name__ == "__main__":
-    # print text
-    # line under empty
-    # contunuisly upgrading
-    curses.wrapper(run)
