@@ -49,6 +49,7 @@ def run(stdscr=None):
     current_word = 0
     current_row = 0
     correct_words_len = 0
+    incorrect_words_len = 0
     # Clear and refresh the screen for a blank canvas
     stdscr.clear()
     stdscr.refresh()
@@ -101,7 +102,10 @@ def run(stdscr=None):
                 (execution_time / 60.0),
             )
             cpm = correct_words_len // (execution_time / 60.0)
-            statusbarstr = f"Press 'q' to exit | CPM = {cpm} WPM = {cpm/5}"
+            accuracy = (
+                correct_words_len / (correct_words_len + incorrect_words_len) * 100
+            )
+            statusbarstr = f"Press 'q' to exit | CPM = {cpm} WPM = {cpm/5} | ACCURACY = {accuracy:.2f}%"
             stdscr.attron(curses.color_pair(5))
             stdscr.addstr(height - 1, 0, statusbarstr)
             stdscr.addstr(
@@ -115,6 +119,7 @@ def run(stdscr=None):
             exit()
 
         correct_words_len = 0
+        incorrect_words_len = 0
         # Turning on attributes for title
         stdscr.attron(curses.A_BOLD)
         # Rendering words
@@ -127,11 +132,13 @@ def run(stdscr=None):
                     and current_word > word_index
                     or current_row > row_index
                 ):
+                    correct_words_len += 1  # space
                     if word == answers[row_index][word_index]:
                         stdscr.attron(curses.color_pair(4))
                         correct_words_len += len(word)
                     else:
                         stdscr.attron(curses.color_pair(2))
+                        incorrect_words_len += len(word)
                     color_set = True
 
                 stdscr.addstr(start_y + row_index, temp_x, word)
