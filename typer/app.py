@@ -52,9 +52,7 @@ class Game:
 
     def init_words(self):
         rows_amount = 2
-        self.words = list(
-            chain.from_iterable(drow_words("en", 50) for _ in range(rows_amount))
-        )
+        self.words = list(chain.from_iterable(drow_words("en", 50) for _ in range(rows_amount)))
         self.answers = []
 
     def __del__(self):
@@ -111,11 +109,8 @@ class Game:
         self.stdscr.attron(curses.A_BOLD)
 
         for row_index, word_index, word in self.iter_words():
-            log.debug(
-                "row_index=%s, word_index=%s, word=%s", row_index, word_index, word
-            )
-            color_set = False
-
+            log.debug("row_index=%s, word_index=%s, word=%s", row_index, word_index, word)
+            color_set = True
             if self.current_word > word_index:
                 correct_chars += 1  # space
                 if word == self.answers[word_index]:
@@ -124,10 +119,10 @@ class Game:
                 else:
                     self.stdscr.attron(curses.color_pair(2))
                     incorrect_chars += len(word)
-                color_set = True
-            elif self.current_word == word_index:
+            elif self.current_word == word_index and self.start_time:
                 self.stdscr.attron(curses.color_pair(6))
-                color_set = True
+            else:
+                color_set = False
 
             if last_row != row_index:
                 temp_x = self.start_x
@@ -151,25 +146,16 @@ class Game:
         log.debug("timer stopped")
 
         log.info(
-            "cpm = %s time = %s %s",
-            self.correct_words_len,
-            execution_time,
-            (execution_time / 60.0),
+            "cpm = %s time = %s %s", self.correct_words_len, execution_time, (execution_time / 60.0),
         )
         cpm = self.correct_words_len // (execution_time / 60.0)
         wpm = cpm / 5
-        accuracy = (
-            self.correct_words_len
-            / (self.correct_words_len + self.incorrect_words_len)
-            * 100
-        )
+        accuracy = self.correct_words_len / (self.correct_words_len + self.incorrect_words_len) * 100
         self.stdscr.attron(curses.color_pair(5))
 
         summary = f"Press any key to exit | CPM = {cpm} WPM = {wpm} | ACCURACY = {accuracy:.2f}%"
         self.stdscr.addstr(self.height - 1, 0, summary)
-        self.stdscr.addstr(
-            self.height - 1, len(summary), " " * (self.width - len(summary) - 1)
-        )
+        self.stdscr.addstr(self.height - 1, len(summary), " " * (self.width - len(summary) - 1))
 
         self.stdscr.attroff(curses.color_pair(5))
         self.quit = True

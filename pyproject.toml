@@ -1,5 +1,33 @@
-from setuptools import find_packages, setup
+[tool.black]
+line-length = 120
+target_version = ['py36']
+include = '\.pyi?$'
+exclude = '''
 
-setup(
-    name="typer", packages=find_packages(),
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+  | foo.py           # also separately exclude a file named foo.py in
+                     # the root of the project
 )
+'''
+
+[tool.isort]
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+line_length = 120
+combine_as_imports = true
+known_first_party = ["typer"]
+known_third_party = ["requests", "bs4"]
