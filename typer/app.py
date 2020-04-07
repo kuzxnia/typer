@@ -30,9 +30,7 @@ class Game:
         self.init_colors()
 
         self.quit = False
-        self.start_time = None
-        self.correct_words_len = 0
-        self.incorrect_words_len = 0
+        self.periods = []
 
         self.init_words()
         self.detect_window_size_change()
@@ -50,10 +48,12 @@ class Game:
 
     def init_words(self):
         # self.words = list(chain.from_iterable(drow_words("en", 50) for _ in range(rows_amount)))
-        self.words = common_words_from_range("en", 0, 100)
+        self.words = common_words_from_range("en", 0, 10)
         self.answers = []
         self.current_word = 0
         self.current_row = 0
+        self.correct_words_ids = []
+        self.incorrect_words_ids = []
 
     def __del__(self):
         curses.echo()
@@ -89,8 +89,8 @@ class Game:
 
     def start_timer(self):
         log.debug("starting timer")
-        if not self.start_time:
-            self.start_time = time()
+        if not self.periods:
+            self.periods.append(time())
 
     def handle_events(self, key, change, writen_text):
         if key == 127:  # backspace
@@ -100,10 +100,18 @@ class Game:
         elif key == ord(" ") or key == 10:
             change = 0
 
+            if writen_text == self.words[self.current_word]:
+                self.correct_words_ids.append(self.current_word)
+            else:
+                self.incorrect_words_ids.append(self.current_word)
+
             self.current_word += 1
+            self.periods.append(time())
             self.answers.append(writen_text)
+
             if self.is_first_in_row(self.current_word):
                 self.current_row += 1
+
             writen_text = ""
         elif key != 0:
             writen_text += chr(key)
@@ -113,8 +121,6 @@ class Game:
 
     def render_words(self):
         color_set = False
-        correct_chars = 0
-        incorrect_chars = 0
         temp_x = self.start_x
 
         self.stdscr.attron(curses.A_BOLD)
@@ -126,14 +132,11 @@ class Game:
 
             color_set = True
             if self.current_word > word_index:
-                correct_chars += 1  # space
                 if word == self.answers[word_index]:
                     self.stdscr.attron(curses.color_pair(4))
-                    correct_chars += len(word)
                 else:
                     self.stdscr.attron(curses.color_pair(2))
-                    incorrect_chars += len(word)
-            elif self.current_word == word_index and self.start_time:
+            elif self.current_word == word_index and self.periods:
                 self.stdscr.attron(curses.color_pair(6))
             else:
                 color_set = False
@@ -150,26 +153,36 @@ class Game:
                 self.stdscr.attroff(curses.color_pair(6))
         self.stdscr.attroff(curses.A_BOLD)
 
-        self.correct_words_len = correct_chars
-        self.incorrect_words_len = incorrect_chars
-
     def render_summary(self):
-        execution_time = time() - self.start_time
         log.debug("timer stopped")
 
-        log.info(
-            "cpm = %s time = %s %s", self.correct_words_len, execution_time, (execution_time / 60.0),
-        )
-        cpm = self.correct_words_len // (execution_time / 60.0)
+        execution_time = self.periods[-1] - self.periods[0]
+        # +1 for each space
+        correct_words_len = sum(len(self.words[id_]) + 1 for id_ in self.correct_words_ids)
+        incorrect_words_len = sum(len(self.answers[id_]) for id_ in self.incorrect_words_ids)
+
+        cpm = correct_words_len // (execution_time / 60.0)
         wpm = cpm / 5
-        accuracy = self.correct_words_len / (self.correct_words_len + self.incorrect_words_len) * 100
-        self.stdscr.attron(curses.color_pair(5))
+        accuracy = correct_words_len / (correct_words_len + incorrect_words_len) * 100 if correct_words_len != 0 else 0
 
-        summary = f"Press any key to exit | CPM = {cpm} WPM = {wpm} | ACCURACY = {accuracy:.2f}%"
-        self.stdscr.addstr(self.height - 1, 0, summary)
-        self.stdscr.addstr(self.height - 1, len(summary), " " * (self.width - len(summary) - 1))
+        summary = [
+            "Well done" if wpm > 50 and accuracy > 95 else "You need to train more",
+            f"It only took you {execution_time:.2f}s",
+            f"CPM = {cpm} | WPM = {wpm} | accuracy = {accuracy:.2f}%",
+            f"invalid words = {len(self.incorrect_words_ids)} | correct words = {len(self.correct_words_ids)}",
+            "",
+            "Press any key to exit",
+        ]
 
-        self.stdscr.attroff(curses.color_pair(5))
+        log.info("cpm = %s time = %s %s", cpm, execution_time, (execution_time / 60.0))
+        self.stdscr.attron(curses.color_pair(1))
+        self.stdscr.attron(curses.A_BOLD)
+
+        for i, line in enumerate(summary):
+            self.stdscr.addstr(self.start_y + i, int((self.width // 2) - (len(line) // 2) - len(line) % 2), line)
+
+        self.stdscr.attroff(curses.color_pair(1))
+        self.stdscr.attroff(curses.A_BOLD)
         self.quit = True
 
     def render_input_bar(self, change, writen_text):

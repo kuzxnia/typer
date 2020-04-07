@@ -39,6 +39,6 @@ def drow_words(lang_code: str, max_chars_in_line: int = 50):
 
 
 def common_words_from_range(lang_code: str, start: int, end: int):
-    words = load_words(lang_code)[start:end]
+    words = [word for line in load_words(lang_code)[start:end] for word in line.split(" ")]
     random.shuffle(words)
     return words
