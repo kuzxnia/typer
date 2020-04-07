@@ -2,10 +2,9 @@ from __future__ import division
 
 import curses
 import logging
-from itertools import chain
 from time import time
 
-from typer.util.common_words import drow_words
+from typer.util.common_words import common_words_from_range
 
 logging.basicConfig(
     filename="typer.log",
@@ -32,7 +31,6 @@ class Game:
 
         self.quit = False
         self.start_time = None
-        self.current_word = 0
         self.correct_words_len = 0
         self.incorrect_words_len = 0
 
@@ -51,9 +49,11 @@ class Game:
         curses.init_pair(6, curses.COLOR_WHITE, 242)  # white on dark gray
 
     def init_words(self):
-        rows_amount = 2
-        self.words = list(chain.from_iterable(drow_words("en", 50) for _ in range(rows_amount)))
+        # self.words = list(chain.from_iterable(drow_words("en", 50) for _ in range(rows_amount)))
+        self.words = common_words_from_range("en", 0, 100)
         self.answers = []
+        self.current_word = 0
+        self.current_row = 0
 
     def __del__(self):
         curses.echo()
@@ -71,6 +71,16 @@ class Game:
                 current_row_len = len(word)
 
             yield row_index, i, word
+
+    def is_first_in_row(self, index):
+        last_row = -1
+        for row_index, word_index, _ in self.iter_words():
+            if last_row != row_index:
+                last_row = row_index
+                if word_index == index:
+                    return True
+        else:
+            return False
 
     def detect_window_size_change(self):
         self.height, self.width = self.stdscr.getmaxyx()
@@ -92,6 +102,8 @@ class Game:
 
             self.current_word += 1
             self.answers.append(writen_text)
+            if self.is_first_in_row(self.current_word):
+                self.current_row += 1
             writen_text = ""
         elif key != 0:
             writen_text += chr(key)
@@ -104,12 +116,14 @@ class Game:
         correct_chars = 0
         incorrect_chars = 0
         temp_x = self.start_x
-        last_row = 0
 
         self.stdscr.attron(curses.A_BOLD)
 
         for row_index, word_index, word in self.iter_words():
             log.debug("row_index=%s, word_index=%s, word=%s", row_index, word_index, word)
+            if row_index not in (self.current_row, self.current_row + 1):
+                continue
+
             color_set = True
             if self.current_word > word_index:
                 correct_chars += 1  # space
@@ -124,12 +138,10 @@ class Game:
             else:
                 color_set = False
 
-            if last_row != row_index:
+            if self.is_first_in_row(word_index):
                 temp_x = self.start_x
-                last_row = row_index
 
-            self.stdscr.addstr(self.start_y + row_index, temp_x, word)
-
+            self.stdscr.addstr(self.start_y + row_index - self.current_row, temp_x, word)
             temp_x += len(word) + 1
 
             if color_set:

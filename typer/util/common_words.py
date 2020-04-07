@@ -36,3 +36,9 @@ def drow_words(lang_code: str, max_chars_in_line: int = 50):
         res.append(temp_word)
         chars_in_line += len(temp_word) + 1
     return res
+
+
+def common_words_from_range(lang_code: str, start: int, end: int):
+    words = load_words(lang_code)[start:end]
+    random.shuffle(words)
+    return words
