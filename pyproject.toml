@@ -30,4 +30,4 @@ use_parentheses = true
 line_length = 120
 combine_as_imports = true
 known_first_party = ["typer"]
-known_third_party = ["requests", "bs4"]
+known_third_party = ["requests", "bs4", "pytest"]
