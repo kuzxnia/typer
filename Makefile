@@ -6,7 +6,7 @@ run:
 	@pipenv run python3 -m $(MODULE)
 
 test:
-	@pipenv run pytest
+	@pipenv run python3 -m pytest
 
 lint:
 	@echo "\n${BLUE}Running Pylint against source and test files...${NC}\n"

@@ -7,8 +7,8 @@ def cpm(correct_words: list, duration: float):
     return score_for_words(correct_words) // (duration / 60.0)
 
 
-def wpm(correct_words: list, duration):
-    return cpm / 5
+def wpm(correct_words: list, duration: float):
+    return cpm(correct_words, duration) / 5
 
 
 def accuracy(correct_words: list, incorrect_words: list):
