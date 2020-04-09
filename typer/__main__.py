@@ -1,4 +1,4 @@
-from typer.app import Game
+from typer.app import run
 
 if __name__ == "__main__":
-    Game().run()
+    run()
