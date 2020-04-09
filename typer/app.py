@@ -5,6 +5,7 @@ import logging
 from time import time
 
 from typer.util.common_words import common_words_from_range
+from typer.util.statistic import accuracy, cpm, wpm
 
 logging.basicConfig(
     filename="typer.log",
@@ -158,17 +159,17 @@ class Game:
 
         execution_time = self.periods[-1] - self.periods[0]
         # +1 for each space
-        correct_words_len = sum(len(self.words[id_]) + 1 for id_ in self.correct_words_ids)
-        incorrect_words_len = sum(len(self.answers[id_]) for id_ in self.incorrect_words_ids)
+        correct_words = [self.words[id_] for id_ in self.correct_words_ids]
+        incorrect_words = [self.answers[id_] for id_ in self.incorrect_words_ids]
 
-        cpm = correct_words_len // (execution_time / 60.0)
-        wpm = cpm / 5
-        accuracy = correct_words_len / (correct_words_len + incorrect_words_len) * 100 if correct_words_len != 0 else 0
+        CPM = cpm(correct_words, execution_time)
+        WPM = wpm(correct_words, execution_time)
+        ACCURACY = accuracy(correct_words, incorrect_words)
 
         summary = [
             "Well done" if wpm > 50 and accuracy > 95 else "You need to train more",
             f"It only took you {execution_time:.2f}s",
-            f"CPM = {cpm} | WPM = {wpm} | accuracy = {accuracy:.2f}%",
+            f"CPM = {CPM} | WPM = {WPM} | accuracy = {ACCURACY:.2f}%",
             f"invalid words = {len(self.incorrect_words_ids)} | correct words = {len(self.correct_words_ids)}",
             "",
             "Press any key to exit",
