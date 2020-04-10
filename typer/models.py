@@ -19,6 +19,7 @@ log = logging.getLogger(__name__)
 
 class Base(ABC):
     def __init__(self):
+        log.debug("in Base.__init__")
         self.stdscr = curses.initscr()
         self.stdscr.keypad(True)
         curses.cbreak()
@@ -35,6 +36,7 @@ class Base(ABC):
         self.quit = False
 
     def __del__(self):
+        log.debug("in Base.__del__")
         self.stdscr.keypad(False)
         curses.echo()
         curses.nocbreak()
@@ -201,7 +203,7 @@ class Game(Base):
             return key
 
     def handle_events(self, key):
-        if key == 127:  # backspace
+        if key == curses.KEY_BACKSPACE:
             if self.cursor_pos_x != self.start_x:
                 self.cursor_pos_x += -1
                 self.temp_word = self.temp_word[:-1]
